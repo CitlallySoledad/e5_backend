@@ -19,6 +19,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Esta línea conecta tu API de ventas
-    path('api/', include('ventas.urls')), 
+    path('api/', include('usuarios.urls')),
+    path('api/', include('ventas.urls')),
 ]
