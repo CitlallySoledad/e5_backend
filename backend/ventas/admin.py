@@ -1,9 +1,15 @@
 from django.contrib import admin
-from .models import Categoria, DetalleVenta, Producto, VarianteProducto, Venta
+from .models import DetalleVenta, Venta
 
-# Esto permite ver y editar las tablas desde el navegador
-admin.site.register(Categoria)
-admin.site.register(Producto)
-admin.site.register(VarianteProducto)
-admin.site.register(Venta)
-admin.site.register(DetalleVenta)
+
+@admin.register(Venta)
+class VentaAdmin(admin.ModelAdmin):
+    list_display = ('id_venta', 'fecha_venta', 'usuario', 'total', 'metodo_pago')
+    list_filter = ('metodo_pago', 'fecha_venta')
+    search_fields = ('usuario__username', 'usuario__nombre_completo')
+
+
+@admin.register(DetalleVenta)
+class DetalleVentaAdmin(admin.ModelAdmin):
+    list_display = ('id_detalle', 'venta', 'variante', 'cantidad', 'precio_unitario_aplicado', 'subtotal')
+    search_fields = ('variante__sku', 'variante__producto__nombre')

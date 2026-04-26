@@ -8,7 +8,16 @@ const TOKEN_KEY = 'inventario_token';
 const USER_KEY = 'inventario_user';
 
 const getErrorMessage = (error, fallbackMessage) => {
-    return error?.response?.data?.detail || error?.response?.data?.error || fallbackMessage;
+    const data = error?.response?.data;
+    if (data?.detail || data?.error) {
+        return data.detail || data.error;
+    }
+    if (data && typeof data === 'object') {
+        return Object.entries(data)
+            .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+            .join(' | ');
+    }
+    return fallbackMessage;
 };
 
 const setToken = (token) => {
@@ -47,6 +56,27 @@ export default {
     getCategorias() {
         return api.get('categorias/');
     },
+    getMarcas() {
+        return api.get('marcas/');
+    },
+    getTallas() {
+        return api.get('tallas/');
+    },
+    getColores() {
+        return api.get('colores/');
+    },
+    getVariantes() {
+        return api.get('variantes/');
+    },
+    getRoles() {
+        return api.get('roles/');
+    },
+    getUsuarios() {
+        return api.get('usuarios/');
+    },
+    getVentas() {
+        return api.get('ventas/');
+    },
     login(credentials) {
         return api.post('auth/login/', credentials)
             .then((response) => {
@@ -79,6 +109,46 @@ export default {
     crearProducto(data) {
         return api.post('productos/', data).catch((error) => {
             throw new Error(getErrorMessage(error, 'No se pudo guardar el producto.'));
+        });
+    },
+    crearCategoria(data) {
+        return api.post('categorias/', data).catch((error) => {
+            throw new Error(getErrorMessage(error, 'No se pudo guardar la categoria.'));
+        });
+    },
+    crearMarca(data) {
+        return api.post('marcas/', data).catch((error) => {
+            throw new Error(getErrorMessage(error, 'No se pudo guardar la marca.'));
+        });
+    },
+    crearTalla(data) {
+        return api.post('tallas/', data).catch((error) => {
+            throw new Error(getErrorMessage(error, 'No se pudo guardar la talla.'));
+        });
+    },
+    crearColor(data) {
+        return api.post('colores/', data).catch((error) => {
+            throw new Error(getErrorMessage(error, 'No se pudo guardar el color.'));
+        });
+    },
+    crearVariante(data) {
+        return api.post('variantes/', data).catch((error) => {
+            throw new Error(getErrorMessage(error, 'No se pudo guardar la variante.'));
+        });
+    },
+    crearRole(data) {
+        return api.post('roles/', data).catch((error) => {
+            throw new Error(getErrorMessage(error, 'No se pudo guardar el rol.'));
+        });
+    },
+    crearUsuario(data) {
+        return api.post('usuarios/', data).catch((error) => {
+            throw new Error(getErrorMessage(error, 'No se pudo guardar el usuario.'));
+        });
+    },
+    crearVenta(data) {
+        return api.post('ventas/', data).catch((error) => {
+            throw new Error(getErrorMessage(error, 'No se pudo registrar la venta.'));
         });
     }
 };

@@ -3,51 +3,55 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .exceptions import DomainError, InsufficientStockError
-from .models import Categoria, Producto, VarianteProducto, Venta
-from .services import InventarioService, VentaService
+from productos.models import Categoria, Color, Marca, Producto, Talla, VarianteProducto
+from usuarios.models import Role, Usuario
+
+from .exceptions import InsufficientStockError
+from .models import Venta
+from .services import VentaService
 
 
-class InventarioServiceTests(APITestCase):
-    def test_no_permite_categorias_duplicadas(self):
-        InventarioService.crear_categoria('Ropa')
-
-        with self.assertRaisesMessage(DomainError, 'La categoria ya existe.'):
-            InventarioService.crear_categoria('ropa')
-
-    def test_registra_venta_y_descuenta_stock(self):
+class VentaServiceTests(APITestCase):
+    def setUp(self):
+        self.role = Role.objects.create(nombre_role='Vendedor', descripcion='Registra ventas')
+        self.usuario = Usuario.objects.create(
+            username='cajero',
+            password_hash='hash',
+            nombre_completo='Cajero Principal',
+            role=self.role,
+        )
         categoria = Categoria.objects.create(nombre='Ropa')
-        producto = Producto.objects.create(nombre='Playera', marca='Marca', categoria=categoria)
-        variante = VarianteProducto.objects.create(
+        marca = Marca.objects.create(nombre='Marca')
+        talla = Talla.objects.create(nombre='M')
+        color = Color.objects.create(nombre='Azul', codigo_hex='#0000FF')
+        producto = Producto.objects.create(
+            nombre='Playera',
+            descripcion='Playera basica',
+            categoria=categoria,
+            marca=marca,
+        )
+        self.variante = VarianteProducto.objects.create(
             producto=producto,
-            talla='M',
-            color='Azul',
+            talla=talla,
+            color=color,
             sku='SKU-1',
+            codigo_barras='750000000001',
             precio_venta='150.00',
             stock_actual=10,
         )
 
-        venta = VentaService.registrar_venta(variante.id, 2, 'tarjeta')
+    def test_registra_venta_y_descuenta_stock(self):
+        venta = VentaService.registrar_venta(self.usuario.id_usuario, self.variante.id_variante, 2, 'tarjeta')
 
-        variante.refresh_from_db()
-        self.assertEqual(variante.stock_actual, 8)
+        self.variante.refresh_from_db()
+        self.assertEqual(self.variante.stock_actual, 8)
         self.assertEqual(Venta.objects.count(), 1)
         self.assertEqual(str(venta.total), '300.00')
+        self.assertEqual(venta.usuario, self.usuario)
 
     def test_no_permite_vender_sin_stock(self):
-        categoria = Categoria.objects.create(nombre='Calzado')
-        producto = Producto.objects.create(nombre='Tenis', marca='Marca', categoria=categoria)
-        variante = VarianteProducto.objects.create(
-            producto=producto,
-            talla='28',
-            color='Negro',
-            sku='SKU-2',
-            precio_venta='999.00',
-            stock_actual=1,
-        )
-
         with self.assertRaises(InsufficientStockError):
-            VentaService.registrar_venta(variante.id, 3, 'efectivo')
+            VentaService.registrar_venta(self.usuario.id_usuario, self.variante.id_variante, 30, 'efectivo')
 
 
 class AuthApiTests(APITestCase):

@@ -5,11 +5,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from .models import Role, Usuario
 from .serializers import (
     CustomTokenObtainPairSerializer,
+    RoleSerializer,
     UserCreateSerializer,
     UserSerializer,
     UserUpdateSerializer,
+    UsuarioPdfSerializer,
 )
 from .services import UsuarioService
 
@@ -54,3 +57,13 @@ class UserViewSet(viewsets.ViewSet):
     def desactivar(self, request, pk=None):
         user = UsuarioService.desactivar_usuario(pk)
         return Response(UserSerializer(user).data)
+
+
+class RoleViewSet(viewsets.ModelViewSet):
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
+
+
+class UsuarioPdfViewSet(viewsets.ModelViewSet):
+    queryset = Usuario.objects.select_related('role').all()
+    serializer_class = UsuarioPdfSerializer

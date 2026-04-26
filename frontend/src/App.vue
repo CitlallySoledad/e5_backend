@@ -1,161 +1,325 @@
 <template>
   <div class="app-shell">
-    <header class="mb-4">
-      <h1 class="page-title">Registro de Inventario</h1>
-      <p class="page-subtitle">
-        Controla productos, consulta datos cargados en MySQL y prueba el flujo de autenticacion del backend.
-      </p>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Punto de venta</p>
+        <h1 class="page-title">Administracion del inventario</h1>
+        <p class="page-subtitle">Gestiona la estructura completa del modelo: usuarios, catalogos, productos, variantes y ventas.</p>
+      </div>
+      <button type="button" class="btn btn-outline-primary" @click="cargarDatos" :disabled="cargando">
+        {{ cargando ? 'Actualizando...' : 'Actualizar' }}
+      </button>
     </header>
 
-    <section class="glass-card mb-4">
-      <div class="panel-header">
-        <h2 class="panel-title">Acceso al sistema</h2>
-        <p class="panel-subtitle">Inicia sesion con un usuario de Django para probar JWT y permisos.</p>
-      </div>
-      <div class="panel-body">
-        <div class="login-grid">
-          <form @submit.prevent="iniciarSesion">
-            <div class="mb-3">
-              <label class="form-label">Usuario</label>
-              <input v-model="credenciales.username" type="text" class="form-control" autocomplete="username" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Contrasena</label>
-              <input v-model="credenciales.password" type="password" class="form-control" autocomplete="current-password" required>
-            </div>
-            <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-success" :disabled="cargandoSesion">
-                {{ cargandoSesion ? 'Entrando...' : 'Iniciar sesion' }}
-              </button>
-              <button type="button" class="btn btn-outline-secondary" @click="cerrarSesion">
-                Cerrar sesion
-              </button>
-            </div>
-            <div v-if="errorSesion" class="alert alert-danger mt-3 mb-0">
-              {{ errorSesion }}
-            </div>
-          </form>
+    <div v-if="mensaje" class="alert alert-success" role="alert">{{ mensaje }}</div>
+    <div v-if="errorCarga" class="alert alert-danger" role="alert">{{ errorCarga }}</div>
 
-          <div class="session-box">
-            <div class="d-flex justify-content-between align-items-start gap-3">
-              <div>
-                <span class="session-tag">{{ sesionActiva ? 'Sesion activa' : 'Sin autenticar' }}</span>
-                <h3 class="h4 mt-3 mb-2">{{ usuarioActual?.username || 'Invitado' }}</h3>
-                <p>{{ usuarioActual?.email || 'No hay usuario autenticado.' }}</p>
-              </div>
-            </div>
-            <hr class="border-secondary-subtle">
-            <p><strong>Rol:</strong> {{ usuarioActual?.rol || 'sin rol' }}</p>
-            <p><strong>Admin:</strong> {{ usuarioActual?.is_staff ? 'si' : 'no' }}</p>
-            <p class="mb-0"><strong>Token cargado:</strong> {{ sesionActiva ? 'si' : 'no' }}</p>
+    <section class="panel mb-4">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Acceso Django</h2>
+          <p class="panel-subtitle">Sesion para endpoints protegidos y administracion tecnica.</p>
+        </div>
+        <span class="status-pill" :class="{ active: sesionActiva }">{{ sesionActiva ? 'Sesion activa' : 'Sin sesion' }}</span>
+      </div>
+      <div class="panel-body login-grid">
+        <form @submit.prevent="iniciarSesion" class="compact-form">
+          <label class="form-label">Usuario</label>
+          <input v-model="credenciales.username" type="text" class="form-control" autocomplete="username" required>
+          <label class="form-label">Contrasena</label>
+          <input v-model="credenciales.password" type="password" class="form-control" autocomplete="current-password" required>
+          <div class="button-row">
+            <button type="submit" class="btn btn-primary" :disabled="cargandoSesion">{{ cargandoSesion ? 'Entrando...' : 'Iniciar sesion' }}</button>
+            <button type="button" class="btn btn-outline-secondary" @click="cerrarSesion">Cerrar</button>
           </div>
+          <p v-if="errorSesion" class="form-error">{{ errorSesion }}</p>
+        </form>
+        <div class="session-summary">
+          <strong>{{ usuarioActual?.username || 'Invitado' }}</strong>
+          <span>{{ usuarioActual?.email || 'Sin correo cargado' }}</span>
+          <span>Rol: {{ usuarioActual?.rol || 'sin rol' }}</span>
         </div>
       </div>
     </section>
 
-    <div class="inventory-grid">
-      <section class="glass-card">
+    <section class="dashboard-grid">
+      <article class="panel">
         <div class="panel-header">
-          <h2 class="panel-title">Agregar nuevo producto</h2>
-          <p class="panel-subtitle">Este formulario sigue usando la API actual de productos.</p>
+          <h2 class="panel-title">Roles y usuarios</h2>
         </div>
-        <div class="panel-body">
-          <form @submit.prevent="guardarProducto">
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Nombre del producto</label>
-                <input v-model="nuevoProducto.nombre" type="text" class="form-control" placeholder="Ej: Camisa Slim Fit" required>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Marca</label>
-                <input v-model="nuevoProducto.marca" type="text" class="form-control" placeholder="Ej: Levi's" required>
-              </div>
+        <div class="panel-body stacked">
+          <form @submit.prevent="guardarRole" class="form-grid two">
+            <input v-model="nuevoRole.nombre_role" class="form-control" placeholder="Rol" required>
+            <input v-model="nuevoRole.descripcion" class="form-control" placeholder="Descripcion">
+            <button class="btn btn-primary span-2" type="submit">Guardar rol</button>
+          </form>
+          <form @submit.prevent="guardarUsuario" class="form-grid two">
+            <input v-model="nuevoUsuario.username" class="form-control" placeholder="Usuario" required>
+            <select v-model="nuevoUsuario.role" class="form-select" required>
+              <option value="" disabled>Rol</option>
+              <option v-for="role in roles" :key="role.id_role" :value="role.id_role">{{ role.nombre_role }}</option>
+            </select>
+            <input v-model="nuevoUsuario.nombre_completo" class="form-control span-2" placeholder="Nombre completo" required>
+            <input v-model="nuevoUsuario.password_hash" class="form-control span-2" placeholder="Password hash" required>
+            <label class="check-line span-2">
+              <input v-model="nuevoUsuario.activo" type="checkbox"> Activo
+            </label>
+            <button class="btn btn-primary span-2" type="submit">Guardar usuario</button>
+          </form>
+          <div class="mini-table">
+            <div v-for="usuario in usuarios" :key="usuario.id_usuario" class="mini-row">
+              <strong>{{ usuario.username }}</strong>
+              <span>{{ usuario.nombre_completo }} · {{ usuario.role_nombre }}</span>
             </div>
+            <p v-if="!usuarios.length" class="empty-state">Sin usuarios.</p>
+          </div>
+        </div>
+      </article>
 
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Categoria</label>
-                <select v-model="nuevoProducto.categoria" class="form-select" required>
-                  <option value="" disabled>Seleccione una categoria</option>
-                  <option v-for="cat in categorias" :key="cat.id" :value="cat.id">
-                    {{ cat.nombre }}
-                  </option>
-                </select>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Descripcion</label>
-                <textarea v-model="nuevoProducto.descripcion" class="form-control" rows="1"></textarea>
-              </div>
-            </div>
+      <article class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Catalogos</h2>
+        </div>
+        <div class="panel-body stacked">
+          <form @submit.prevent="guardarCategoria" class="inline-form">
+            <input v-model="nuevaCategoria.nombre" class="form-control" placeholder="Categoria" required>
+            <button class="btn btn-primary" type="submit">Agregar</button>
+          </form>
+          <form @submit.prevent="guardarMarca" class="inline-form">
+            <input v-model="nuevaMarca.nombre" class="form-control" placeholder="Marca" required>
+            <button class="btn btn-primary" type="submit">Agregar</button>
+          </form>
+          <form @submit.prevent="guardarTalla" class="inline-form">
+            <input v-model="nuevaTalla.nombre" class="form-control" placeholder="Talla" required>
+            <button class="btn btn-primary" type="submit">Agregar</button>
+          </form>
+          <form @submit.prevent="guardarColor" class="form-grid color-grid">
+            <input v-model="nuevoColor.nombre" class="form-control" placeholder="Color" required>
+            <input v-model="nuevoColor.codigo_hex" type="color" class="form-control form-control-color color-input" required>
+            <button class="btn btn-primary" type="submit">Agregar</button>
+          </form>
+          <div class="tag-cloud">
+            <span v-for="categoria in categorias" :key="categoria.id_categoria">{{ categoria.nombre }}</span>
+            <span v-for="marca in marcas" :key="marca.id_marca">{{ marca.nombre }}</span>
+            <span v-for="talla in tallas" :key="talla.id_talla">{{ talla.nombre }}</span>
+            <span v-for="color in colores" :key="color.id_color">
+              <i class="color-dot" :style="{ backgroundColor: color.codigo_hex }"></i>{{ color.nombre }}
+            </span>
+          </div>
+        </div>
+      </article>
 
-            <button type="submit" class="btn btn-primary w-100">Guardar en base de datos</button>
+      <article class="panel wide">
+        <div class="panel-header">
+          <h2 class="panel-title">Productos y variantes</h2>
+        </div>
+        <div class="panel-body product-layout">
+          <form @submit.prevent="guardarProducto" class="form-grid product-form">
+            <input v-model="nuevoProducto.nombre" class="form-control" placeholder="Producto" required>
+            <select v-model="nuevoProducto.categoria" class="form-select" required>
+              <option value="" disabled>Categoria</option>
+              <option v-for="categoria in categorias" :key="categoria.id_categoria" :value="categoria.id_categoria">{{ categoria.nombre }}</option>
+            </select>
+            <select v-model="nuevoProducto.marca" class="form-select" required>
+              <option value="" disabled>Marca</option>
+              <option v-for="marca in marcas" :key="marca.id_marca" :value="marca.id_marca">{{ marca.nombre }}</option>
+            </select>
+            <textarea v-model="nuevoProducto.descripcion" class="form-control span-3" rows="2" placeholder="Descripcion"></textarea>
+            <button class="btn btn-primary span-3" type="submit">Guardar producto</button>
+          </form>
+
+          <form @submit.prevent="guardarVariante" class="form-grid variant-form">
+            <select v-model="nuevaVariante.producto" class="form-select" required>
+              <option value="" disabled>Producto</option>
+              <option v-for="producto in productos" :key="producto.id_producto" :value="producto.id_producto">{{ producto.nombre }}</option>
+            </select>
+            <select v-model="nuevaVariante.talla" class="form-select" required>
+              <option value="" disabled>Talla</option>
+              <option v-for="talla in tallas" :key="talla.id_talla" :value="talla.id_talla">{{ talla.nombre }}</option>
+            </select>
+            <select v-model="nuevaVariante.color" class="form-select" required>
+              <option value="" disabled>Color</option>
+              <option v-for="color in colores" :key="color.id_color" :value="color.id_color">{{ color.nombre }}</option>
+            </select>
+            <input v-model="nuevaVariante.sku" class="form-control" placeholder="SKU" required>
+            <input v-model="nuevaVariante.codigo_barras" class="form-control" placeholder="Codigo de barras" required>
+            <input v-model.number="nuevaVariante.precio_venta" type="number" min="0.01" step="0.01" class="form-control" placeholder="Precio" required>
+            <input v-model.number="nuevaVariante.stock_actual" type="number" min="0" step="1" class="form-control span-3" placeholder="Stock" required>
+            <button class="btn btn-primary span-3" type="submit">Guardar variante</button>
           </form>
         </div>
-      </section>
+      </article>
 
-      <div v-if="errorCarga" class="alert alert-danger mb-0" role="alert">
-        {{ errorCarga }}
-      </div>
-
-      <section class="glass-card">
+      <article class="panel wide">
         <div class="panel-header">
-          <h2 class="panel-title">Productos en MySQL</h2>
-          <p class="panel-subtitle">Consulta directa al endpoint de productos del backend.</p>
+          <h2 class="panel-title">Registrar venta</h2>
         </div>
-        <div class="panel-body px-0">
-          <table class="table table-hover mb-0">
-            <thead>
-              <tr>
-                <th class="ps-4">ID</th>
-                <th>Nombre</th>
-                <th>Marca</th>
-                <th class="pe-4">Categoria</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="p in productos" :key="p.id">
-                <td class="ps-4">{{ p.id }}</td>
-                <td>{{ p.nombre }}</td>
-                <td>{{ p.marca }}</td>
-                <td class="pe-4">{{ p.categoria_nombre || p.categoria }}</td>
-              </tr>
-              <tr v-if="!productos.length">
-                <td colspan="4" class="empty-state">No hay productos registrados.</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="panel-body">
+          <form @submit.prevent="guardarVenta" class="form-grid sale-form">
+            <select v-model="nuevaVenta.usuario_id" class="form-select" required>
+              <option value="" disabled>Usuario</option>
+              <option v-for="usuario in usuariosActivos" :key="usuario.id_usuario" :value="usuario.id_usuario">{{ usuario.nombre_completo }}</option>
+            </select>
+            <select v-model="nuevaVenta.variante_id" class="form-select" required>
+              <option value="" disabled>Variante</option>
+              <option v-for="variante in variantes" :key="variante.id_variante" :value="variante.id_variante">
+                {{ variante.producto_nombre }} · {{ variante.sku }} · stock {{ variante.stock_actual }}
+              </option>
+            </select>
+            <input v-model.number="nuevaVenta.cantidad" type="number" min="1" step="1" class="form-control" placeholder="Cantidad" required>
+            <select v-model="nuevaVenta.metodo_pago" class="form-select" required>
+              <option value="" disabled>Metodo de pago</option>
+              <option>Efectivo</option>
+              <option>Tarjeta</option>
+              <option>Transferencia</option>
+            </select>
+            <button class="btn btn-success" type="submit">Registrar venta</button>
+          </form>
         </div>
-      </section>
-    </div>
+      </article>
+    </section>
+
+    <section class="panel mt-4">
+      <div class="panel-header">
+        <h2 class="panel-title">Inventario y ventas</h2>
+      </div>
+      <div class="panel-body table-wrap">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Marca</th>
+              <th>Categoria</th>
+              <th>SKU</th>
+              <th>Talla</th>
+              <th>Color</th>
+              <th>Precio</th>
+              <th>Stock</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="variante in variantes" :key="variante.id_variante">
+              <td>{{ variante.producto_nombre }}</td>
+              <td>{{ productoPorId(variante.producto)?.marca_nombre || '-' }}</td>
+              <td>{{ productoPorId(variante.producto)?.categoria_nombre || '-' }}</td>
+              <td>{{ variante.sku }}</td>
+              <td>{{ variante.talla_nombre }}</td>
+              <td><i class="color-dot" :style="{ backgroundColor: variante.color_hex }"></i>{{ variante.color_nombre }}</td>
+              <td>${{ variante.precio_venta }}</td>
+              <td>{{ variante.stock_actual }}</td>
+            </tr>
+            <tr v-if="!variantes.length">
+              <td colspan="8" class="empty-state">Sin variantes registradas.</td>
+            </tr>
+          </tbody>
+        </table>
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Venta</th>
+              <th>Fecha</th>
+              <th>Usuario</th>
+              <th>Metodo</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="venta in ventas" :key="venta.id_venta">
+              <td>#{{ venta.id_venta }}</td>
+              <td>{{ formatearFecha(venta.fecha_venta) }}</td>
+              <td>{{ venta.usuario_nombre }}</td>
+              <td>{{ venta.metodo_pago }}</td>
+              <td>${{ venta.total }}</td>
+            </tr>
+            <tr v-if="!ventas.length">
+              <td colspan="5" class="empty-state">Sin ventas registradas.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import api from './services/api';
 
-const productos = ref([]);
+const roles = ref([]);
+const usuarios = ref([]);
 const categorias = ref([]);
+const marcas = ref([]);
+const tallas = ref([]);
+const colores = ref([]);
+const productos = ref([]);
+const variantes = ref([]);
+const ventas = ref([]);
+
+const mensaje = ref('');
 const errorCarga = ref('');
 const errorSesion = ref('');
+const cargando = ref(false);
 const cargandoSesion = ref(false);
 const usuarioActual = ref(api.getStoredUser());
 const sesionActiva = ref(Boolean(api.getToken()));
-const nuevoProducto = ref({ nombre: '', marca: '', categoria: '', descripcion: '' });
 const credenciales = ref({ username: '', password: '' });
 
+const nuevoRole = ref({ nombre_role: '', descripcion: '' });
+const nuevoUsuario = ref({ username: '', password_hash: '', nombre_completo: '', role: '', activo: true });
+const nuevaCategoria = ref({ nombre: '' });
+const nuevaMarca = ref({ nombre: '' });
+const nuevaTalla = ref({ nombre: '' });
+const nuevoColor = ref({ nombre: '', codigo_hex: '#2563eb' });
+const nuevoProducto = ref({ nombre: '', descripcion: '', categoria: '', marca: '' });
+const nuevaVariante = ref({ producto: '', talla: '', color: '', sku: '', codigo_barras: '', precio_venta: '', stock_actual: 0 });
+const nuevaVenta = ref({ usuario_id: '', variante_id: '', cantidad: 1, metodo_pago: '' });
+
+const usuariosActivos = computed(() => usuarios.value.filter((usuario) => usuario.activo));
+
+const productoPorId = (id) => productos.value.find((producto) => producto.id_producto === id);
+
+const formatearFecha = (fecha) => {
+  if (!fecha) return '-';
+  return new Intl.DateTimeFormat('es-MX', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(fecha));
+};
+
+const mostrarMensaje = (texto) => {
+  mensaje.value = texto;
+  window.setTimeout(() => {
+    if (mensaje.value === texto) mensaje.value = '';
+  }, 3500);
+};
+
 const cargarDatos = async () => {
+  cargando.value = true;
   errorCarga.value = '';
   try {
-    const [resProd, resCat] = await Promise.all([
+    const [rolesRes, usuariosRes, categoriasRes, marcasRes, tallasRes, coloresRes, productosRes, variantesRes, ventasRes] = await Promise.all([
+      api.getRoles(),
+      api.getUsuarios(),
+      api.getCategorias(),
+      api.getMarcas(),
+      api.getTallas(),
+      api.getColores(),
       api.getProductos(),
-      api.getCategorias()
+      api.getVariantes(),
+      api.getVentas()
     ]);
-    productos.value = resProd.data;
-    categorias.value = resCat.data;
+
+    roles.value = rolesRes.data;
+    usuarios.value = usuariosRes.data;
+    categorias.value = categoriasRes.data;
+    marcas.value = marcasRes.data;
+    tallas.value = tallasRes.data;
+    colores.value = coloresRes.data;
+    productos.value = productosRes.data;
+    variantes.value = variantesRes.data;
+    ventas.value = ventasRes.data;
   } catch (error) {
     console.error('Error al cargar datos:', error);
-    errorCarga.value = 'No se pudo conectar con la API. Verifica que el backend este encendido.';
+    errorCarga.value = 'No se pudo cargar la informacion del backend.';
+  } finally {
+    cargando.value = false;
   }
 };
 
@@ -165,7 +329,6 @@ const restaurarSesion = async () => {
     usuarioActual.value = null;
     return;
   }
-
   try {
     const response = await api.getPerfil();
     usuarioActual.value = response.data;
@@ -186,7 +349,6 @@ const iniciarSesion = async () => {
     sesionActiva.value = true;
     credenciales.value = { username: '', password: '' };
   } catch (error) {
-    console.error('Error de autenticacion:', error);
     errorSesion.value = error.message;
   } finally {
     cargandoSesion.value = false;
@@ -200,17 +362,70 @@ const cerrarSesion = () => {
   errorSesion.value = '';
 };
 
-const guardarProducto = async () => {
+const guardar = async (accion, limpiar, texto) => {
   try {
-    await api.crearProducto(nuevoProducto.value);
-    alert('Producto guardado exitosamente.');
-    nuevoProducto.value = { nombre: '', marca: '', categoria: '', descripcion: '' };
+    await accion();
+    limpiar();
     await cargarDatos();
+    mostrarMensaje(texto);
   } catch (error) {
-    console.error('Error al guardar:', error);
-    alert(error.message);
+    errorCarga.value = error.message;
   }
 };
+
+const guardarRole = () => guardar(
+  () => api.crearRole(nuevoRole.value),
+  () => { nuevoRole.value = { nombre_role: '', descripcion: '' }; },
+  'Rol guardado.'
+);
+
+const guardarUsuario = () => guardar(
+  () => api.crearUsuario(nuevoUsuario.value),
+  () => { nuevoUsuario.value = { username: '', password_hash: '', nombre_completo: '', role: '', activo: true }; },
+  'Usuario guardado.'
+);
+
+const guardarCategoria = () => guardar(
+  () => api.crearCategoria(nuevaCategoria.value),
+  () => { nuevaCategoria.value = { nombre: '' }; },
+  'Categoria guardada.'
+);
+
+const guardarMarca = () => guardar(
+  () => api.crearMarca(nuevaMarca.value),
+  () => { nuevaMarca.value = { nombre: '' }; },
+  'Marca guardada.'
+);
+
+const guardarTalla = () => guardar(
+  () => api.crearTalla(nuevaTalla.value),
+  () => { nuevaTalla.value = { nombre: '' }; },
+  'Talla guardada.'
+);
+
+const guardarColor = () => guardar(
+  () => api.crearColor(nuevoColor.value),
+  () => { nuevoColor.value = { nombre: '', codigo_hex: '#2563eb' }; },
+  'Color guardado.'
+);
+
+const guardarProducto = () => guardar(
+  () => api.crearProducto(nuevoProducto.value),
+  () => { nuevoProducto.value = { nombre: '', descripcion: '', categoria: '', marca: '' }; },
+  'Producto guardado.'
+);
+
+const guardarVariante = () => guardar(
+  () => api.crearVariante(nuevaVariante.value),
+  () => { nuevaVariante.value = { producto: '', talla: '', color: '', sku: '', codigo_barras: '', precio_venta: '', stock_actual: 0 }; },
+  'Variante guardada.'
+);
+
+const guardarVenta = () => guardar(
+  () => api.crearVenta(nuevaVenta.value),
+  () => { nuevaVenta.value = { usuario_id: '', variante_id: '', cantidad: 1, metodo_pago: '' }; },
+  'Venta registrada.'
+);
 
 onMounted(async () => {
   await Promise.all([restaurarSesion(), cargarDatos()]);

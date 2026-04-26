@@ -2,6 +2,54 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from .models import Role, Usuario
+
+
+class RoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Role
+        fields = ['id_role', 'nombre_role', 'descripcion']
+
+    def validate_nombre_role(self, value):
+        nombre_role = value.strip()
+        if not nombre_role:
+            raise serializers.ValidationError('El nombre del rol es obligatorio.')
+        return nombre_role
+
+
+class UsuarioPdfSerializer(serializers.ModelSerializer):
+    role_nombre = serializers.ReadOnlyField(source='role.nombre_role')
+
+    class Meta:
+        model = Usuario
+        fields = [
+            'id_usuario',
+            'username',
+            'password_hash',
+            'nombre_completo',
+            'role',
+            'role_nombre',
+            'activo',
+        ]
+
+    def validate_username(self, value):
+        username = value.strip()
+        if not username:
+            raise serializers.ValidationError('El usuario es obligatorio.')
+        return username
+
+    def validate_nombre_completo(self, value):
+        nombre_completo = value.strip()
+        if not nombre_completo:
+            raise serializers.ValidationError('El nombre completo es obligatorio.')
+        return nombre_completo
+
+    def validate_password_hash(self, value):
+        password_hash = value.strip()
+        if not password_hash:
+            raise serializers.ValidationError('El password_hash es obligatorio.')
+        return password_hash
+
 
 class UserSerializer(serializers.ModelSerializer):
     rol = serializers.SerializerMethodField()
