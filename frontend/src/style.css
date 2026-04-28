@@ -1,0 +1,122 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(22, 163, 74, 0.12), transparent 28%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  color: #0f172a;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.app-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 40px 20px 56px;
+}
+
+.page-title {
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  margin-bottom: 0.5rem;
+}
+
+.page-subtitle {
+  max-width: 720px;
+  color: #475569;
+  margin-bottom: 2rem;
+}
+
+.glass-card {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.panel-header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  padding: 1.25rem 1.5rem;
+}
+
+.panel-body {
+  padding: 1.5rem;
+}
+
+.login-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 1.25rem;
+}
+
+.session-box {
+  border-radius: 18px;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 1.25rem;
+  height: 100%;
+}
+
+.session-box p {
+  margin-bottom: 0.35rem;
+}
+
+.session-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.18);
+  color: #bfdbfe;
+}
+
+.inventory-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.panel-title {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+}
+
+.panel-subtitle {
+  color: #64748b;
+  margin: 0.35rem 0 0;
+}
+
+.table thead th {
+  border-bottom-width: 1px;
+  color: #334155;
+}
+
+.table tbody td {
+  vertical-align: middle;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #64748b;
+}
+
+@media (max-width: 900px) {
+  .login-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-title {
+    font-size: 2.2rem;
+  }
+
+  .app-shell {
+    padding: 24px 14px 40px;
+  }
+}
