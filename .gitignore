@@ -1,0 +1,36 @@
+# .gitignore
+
+# Variables de entorno - NUNCA subir
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Django
+*.sqlite3
+media/
+staticfiles/
+
+# Node
+node_modules/
+dist/
+.npm
+
+# VS Code
+.vscode/settings.json
+
+# OS
+.DS_Store
+Thumbs.db
